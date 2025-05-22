@@ -1,0 +1,4 @@
+config.ini
+.venv
+geojson_with_osm.png
+.vscode/settings.json
