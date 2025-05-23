@@ -13,7 +13,7 @@ connection = pika.BlockingConnection(pika.URLParameters(config["bsky"]["amqp"]))
 channel = connection.channel()
 
 queue = channel.queue_declare("BSKY-ALERTS",exclusive=True)
-channel.queue_bind(queue,"alerts","alerts.*.immediate.*")
+channel.queue_bind(queue,"feed","AX.#")
 
 def callback(ch, method:pika.spec.Basic.Deliver, properties:pika.frame.Header, body):
     client = Client()
