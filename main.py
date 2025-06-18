@@ -1,4 +1,4 @@
-import configparser
+import configparser,collections
 
 import pika
 import pika.frame
@@ -15,7 +15,7 @@ queue = channel.queue_declare("BSKY-ALERTS",exclusive=True)
 channel.queue_bind(queue="BSKY-ALERTS",exchange="feed",routing_key="*.active.*")
 client = Client()
 
-
+latest = collections.deque(maxlen=50)
 
 client.login(config["bsky"]["uname"], config["bsky"]["psswd"])
 dm_client = client.with_bsky_chat_proxy()
@@ -42,7 +42,7 @@ def split_into_blocks(text, max_len=300):
         # Add the period back unless it's the last empty split
         sentence_with_period = sentence + '.'
         
-        if len(current_block) + len(sentence_with_period) <= max_len:
+        if len(current_block) + len(sentence_with_period) < max_len:
             current_block += sentence_with_period + ' '
         else:
             if current_block:
@@ -63,6 +63,9 @@ def SENDIT(block,last,root):
         return models.create_strong_ref(client.send_post(block))
 
 def callback(ch, method:pika.spec.Basic.Deliver, properties:pika.frame.Header, body: bytes):
+    if body in latest:
+        return
+    latest.append(body)
     print(len(body))
     if len(body) > 300:
         print(body)
@@ -85,6 +88,7 @@ dm.send_message(
         )
     )
 try:
+    print("RDY")
     channel.basic_consume("BSKY-ALERTS",callback,auto_ack=True)
     channel.start_consuming()
 except BaseException as e:
