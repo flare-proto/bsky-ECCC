@@ -35,24 +35,53 @@ def split_into_blocks(text, max_len=300):
     current_block = ""
     sentences = text.split('.')
 
-    for i, sentence in enumerate(sentences):
+    for sentence in sentences:
         sentence = sentence.strip()
         if not sentence:
             continue
-        # Add the period back unless it's the last empty split
         sentence_with_period = sentence + '.'
-        
-        if len(current_block) + len(sentence_with_period) < max_len:
-            current_block += sentence_with_period + ' '
+
+        if len(sentence_with_period) <= max_len:
+            if len(current_block) + len(sentence_with_period) + 1 <= max_len:
+                if current_block:
+                    current_block += ' ' + sentence_with_period
+                else:
+                    current_block = sentence_with_period
+            else:
+                if current_block:
+                    blocks.append(current_block)
+                current_block = sentence_with_period
         else:
+            # Sentence is too long: split by commas
+            chunks = sentence.split(',')
+            rebuilt = ""
+            for i, chunk in enumerate(chunks):
+                chunk = chunk.strip()
+                if not chunk:
+                    continue
+                chunk += ',' if i < len(chunks) - 1 else '.'
+
+                if len(rebuilt) + len(chunk) + 1 <= max_len:
+                    if rebuilt:
+                        rebuilt += ' ' + chunk
+                    else:
+                        rebuilt = chunk
+                else:
+                    if rebuilt:
+                        blocks.append(rebuilt)
+                    rebuilt = chunk
+            if rebuilt:
+                blocks.append(rebuilt)
+            # Reset current block because the oversized sentence was already handled
             if current_block:
-                blocks.append(current_block.strip())
-            current_block = sentence_with_period + ' '
+                blocks.append(current_block)
+                current_block = ""
 
     if current_block:
-        blocks.append(current_block.strip())
+        blocks.append(current_block)
 
     return blocks
+
 
 def SENDIT(block,last,root):
     if last:
